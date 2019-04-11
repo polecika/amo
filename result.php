@@ -4,20 +4,19 @@
 <?php
 
 // Тут сразу нужно авторизироваться
-$curl=curl_init(); #Сохраняем дескриптор сеанса cURL
+ #Сохраняем дескриптор сеанса cURL
 $user=[
     'USER_LOGIN'=>'psvet@team.amocrm.com', #Логин (электронная почта)
     'USER_HASH'=>'11622c37a45f475e911e5e21766f727c85ddbde0' #Хэш для доступа к API (смотрите в профиле пользователя)
 ];
-$user = json_encode($user);
 $link='https://testPolinaSvet.amocrm.ru/private/api/auth.php?type=json';
-curl($curl, $link, 'POST', $user);
+curl($link, 'POST', $user);
 $func=$_GET["func"];// Получаем номер среагировавшей формы
 switch ($func) {
     case 1:
         $n=$_POST["number"];              //получаем данные из формы
 
-        if(create_n_el($curl, $n)) {             //запускаем функцию и проверяем
+        if(create_n_el($n)) {             //запускаем функцию и проверяем
             echo 'Было добавлено '.$n.' контактов, сделок, покупателей и компаний';
             echo '</br>';
             echo 'Был создан мультисписок и всем контактам назначено рандомок количество значений';
@@ -32,8 +31,8 @@ switch ($func) {
     case 5:
         break;
 }
-function curl($curl, $link, $method, $data) { //Функция курл запроса, принимает ссылку, метод
-
+function curl($link, $method, $data) { //Функция курл запроса, принимает ссылку, метод
+    $curl=curl_init();
     #Устанавливаем необходимые опции для сеанса cURL
     curl_setopt($curl,CURLOPT_RETURNTRANSFER,true);
     curl_setopt($curl,CURLOPT_USERAGENT,'amoCRM-API-client/1.0');
@@ -72,159 +71,120 @@ function curl($curl, $link, $method, $data) { //Функция курл запр
     }
 
     return $out;
-
+    curl_close($curl); //Закрываем курл
 }
 
 
 
-function create_n_el($curl, $num) {            //Функция создания контактов, компаний, сделок и покупателей
-    //Начнём с контактов
-    for($i = 1; $i <= $num; $i++) {       // Заполняем N контактов значениями
-        $contacts['add'][] = [
-            'name' => 'Contact ' . $i
-        ];
+function create_n_el($num) {//Функция создания контактов, компаний, сделок и покупателей
+    //проверим, насколько много
+    $circle = ceil($num / 100);
+    for($j=1; $j<=$circle; $j++) {
+        echo $j.' круг отправки:';
+        //Создаем  массивы с данными
+        for ($i = 1 * $j; $i <= 100 * $j; $i++) {
+            if($i<=$num) {
+                $contacts['add'][] = [                           // Заполняем N контактов значениями
+                    'name' => 'Contact ' . $i
+                ];
+            }
+        }
+        //100 значений добавлено в массив, можно отправлять URL
+        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/contacts';
+        /*
+         Данные получаем в формате JSON, поэтому, для получения читаемых данных,
+         нам придётся перевести ответ в формат, понятный PHP
+         */
+        $result = json_decode(curl($link, 'POST', $contacts),true);
+        $ids_contacts = [];
+        foreach($result['_embedded']['items'] as $item) {  //
+            $ids_contacts[] = $item['id'];
+        }
+        //теперь добавим компаний
+        for($i = 1 * $j; $i <= 100 * $j; $i++) {// Заполняем N копаний значениями
+            //echo $i.'   '.$ids_contacts[$i];
+            $companies['add'][] = [
+                'name' => 'Company ' . $i,
+                'contacts_id' => $ids_contacts[0][$i-1],  // И привязываем к каждой компании контакт
+            ];
+        }
+        $link='https://testPolinaSvet.amocrm.ru/api/v2/companies';
+        $result = json_decode(curl($link, 'POST', $companies),true);
+        $ids_companies = [];
+        foreach($result['_embedded']['items'] as $item) {  //
+            $ids_companies[] = $item['id'];
+        }
+        unset($result);
+        //создаем сделки
+        for($i = 1 * $j; $i <= 100 * $j; $i++) {       // Заполняем N сделок значениями
+            $leads['add'][] = [
+                'name' => 'Lead ' . $i,
+                'contacts_id' => $ids_contacts[0][$i-1],  // Привязываем к каждой сделке контакт
+                'company_id'  => $ids_companies[0][$i-1]  // Привязываем к каждой сделке компанию
+            ];
+        }
+        #Формируем ссылку для запроса
+        $link='https://testPolinaSvet.amocrm.ru/api/v2/leads';
+        $result = json_decode(curl($link, 'POST', $leads),true);
+        $ids_leads = [];
+        foreach($result['_embedded']['items'] as $item) {  //
+            $ids_leads[] = $item['id'];
+        }
+        unset($result);
+        //создаем покупателей
+        for($i = 1 * $j; $i <= 100 * $j; $i++) {       // Заполняем N покупателей значениями
+            $customers['add'][] = [
+                'name' => 'Customer ' . $i,
+                'company_id'  => $ids_companies[0][$i-1], //Привязываем к каждому покупателю компанию
+                'next_date' => strtotime("now"),   //Обязательный параметр,
+                'contacts_id' => array_rand($ids_contacts, 1)
+            ];
+        }
+        #Формируем ссылку для запроса
+        $link='https://testPolinaSvet.amocrm.ru/api/v2/customers';
+
+        $result = json_decode(curl($link, 'POST', $customers),true);
+        $ids_customers = [];
+        foreach($result['_embedded']['items'] as $item) {
+            $ids_customers[] = $item['id'];
+        }
+        unset($result);
     }
-    /* Инициируем запрос с помощью cURL */
-    $link = 'https://testPolinaSvet.amocrm.ru/api/v2/contacts';
-    /*
-     Данные получаем в формате JSON, поэтому, для получения читаемых данных,
-     нам придётся перевести ответ в формат, понятный PHP
-     */
-    $result = json_decode(curl($curl, $link, 'POST', $contacts),true);
-    $ids_contacts = [];
-    foreach($result['_embedded']['items'] as $item) {  //
-        $ids_contacts[] = $item['id'];
-    }
-    //echo "<pre>";
-    //var_dump($ids_contacts);
-    //echo "</pre>";
-    unset($result);
-
-    //теперь добавим компаний
-    for($i = 0; $i < $num; $i++) {       // Заполняем N копаний значениями
-        $companies['add'][] = [
-            'name' => 'Company ' . ($i+1),
-            'contacts_id' => $ids_contacts[$i]     // И привязываем к каждой компании контакт
-        ];
-    }
-    $link='https://testPolinaSvet.amocrm.ru/api/v2/companies';
-    $result = json_decode(curl($curl, $link, 'POST', $companies),true);
-    $ids_companies = [];
-    foreach($result['_embedded']['items'] as $item) {  //
-        $ids_companies[] = $item['id'];
-    }
-    //echo "<pre>";
-    //var_dump($ids_companies);
-    //echo "</pre>";
-    unset($result);
-
-    //создаем сделки
-    for($i = 0; $i < $num; $i++) {       // Заполняем N сделок значениями
-        $leads['add'][] = [
-            'name' => 'Lead ' . ($i+1),
-            'contacts_id' => $ids_contacts[$i],  // Привязываем к каждой сделке контакт
-            'company_id'  => $ids_companies[$i]  // Привязываем к каждой сделке компанию
-        ];
-    }
-
-    #Формируем ссылку для запроса
-    $link='https://testPolinaSvet.amocrm.ru/api/v2/leads';
-
-
-    $result = json_decode(curl($curl, $link, 'POST', $leads),true);
-    $ids_leads = [];
-    foreach($result['_embedded']['items'] as $item) {  //
-        $ids_leads[] = $item['id'];
-    }
-    //echo "<pre>";
-    //var_dump($ids_leads);
-    //echo "</pre>";
-    unset($result);
-
-    //создаем покупателей
-    for($i = 0; $i < $num; $i++) {       // Заполняем N покупателей значениями
-        $customers['add'][] = [
-            'name' => 'Customer ' . ($i+1),
-            'company_id'  => $ids_companies[$i], //Привязываем к каждому покупателю компанию
-            'next_date' => strtotime("now"),   //Обязательный параметр,
-            'contacts_id' => array_rand($ids_contacts, $num)
-        ];
-    }
-    #Формируем ссылку для запроса
-    $link='https://testPolinaSvet.amocrm.ru/api/v2/customers';
-
-    $result = json_decode(curl($curl, $link, 'POST', $customers),true);
-    $ids_customers = [];
-    foreach($result['_embedded']['items'] as $item) {
-        $ids_customers[] = $item['id'];
-    }
-    //echo "<pre>";
-    //var_dump($ids_customers);
-    //echo "</pre>";
-    unset($result);
-
-
-    // создаем мультисписок и привязываем его ко всем контактам
-    $fields['add'][] = [
-        'name' => "Выбор номера:",
-        'field_type' =>  5,
-        'element_type' => 1,
-        'origin' => "123456789_Polina_Svet",
-        'is_editable' => "1", // Значение: 1 - можно редактировать, 0 - нельзя
-        'enums' => [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10"
-        ]
-    ];
-    $link='https://testPolinaSvet.amocrm.ru/api/v2/fields';
-
-    $result = json_decode(curl($curl, $link, 'POST', $fields),true);
-    echo "<pre>";
-    $id_field = $result['_embedded']['items'][0]['id'];
-    echo 'id созданного мультисписка: '.$id_field;
-    echo "</pre>";
-    unset($result);
-    //добавляем рандомные значения мультисписка к контактам -- пока не реализовано
-    foreach($ids_contacts as $contact) {
-        $how_much = mt_rand(1,10);
-        echo 'Для контакта: '.$contact.' будет добавлено '.$how_much.' рандомных полей мультисписка</br>'; //тестим
-        echo 'Начали:</br>';
-        $up_contacts ['update'][] = [
-            'id' => $contact,
-            'updated_at' => strtotime("now"),
-            'custom_fields' => [
-                [
-                    'id' => $id_field,
-                    'values' => [
-                        [
-                            'enum' => mt_rand(1,10)
-                        ],
-                    ]
-                ]
+        // создаем мультисписок и привязываем его ко всем контактам
+        $fields['add'][] = [
+            'name' => "Выбор номера:",
+            'field_type' =>  5,
+            'element_type' => 1,
+            'origin' => "123456789_Polina_Svet",
+            'is_editable' => "1", // Значение: 1 - можно редактировать, 0 - нельзя
+            'enums' => [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10"
             ]
         ];
-        //будем добавлять поля в массив
-        for($i=0; $i<$how_much; $i++) {
-            array_push($up_contacts ['update'][0]['custom_fields'][0]['values'], ['enum' => mt_rand(1,10)]);
-        }
-        //echo "<pre>";
-        //var_dump($up_contacts);
-        //echo "<pre>";
-        $link='https://testPolinaSvet.amocrm.ru/api/v2/contacts';
-        curl($curl, $link, 'POST', $up_contacts);
-        $up_contacts = [];
-    }
+        $link='https://testPolinaSvet.amocrm.ru/api/v2/fields';
+
+        $result = json_decode(curl($link, 'POST', $fields),true);
+        echo "<pre>";
+        $id_field = $result['_embedded']['items'][0]['id'];
+        echo 'id созданного мультисписка: '.$id_field;
+        echo "</pre>";
+        unset($result);
+        //добавляем рандомные значения мультисписка к контактам -- пока не реализовано
+
+
+return TRUE;
 };
 
-curl_close($curl); //Закрываем курл
+
 ?>
 <a href="/"><button>Вернуться на главную</button></a>
 </body>
