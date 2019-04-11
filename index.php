@@ -148,16 +148,16 @@
     </body>
 </html>
 <?php
-$data = array (
+$data =  [
     'add' =>
-        array (
+         [
             0 =>
-                array (
+                [
                     'name' => '123',
                     'company_id' => '7835211',
-                ),
-        ),
-);
+                ],
+        ],
+];
 $link = "https://testpolinasvet.amocrm.ru/api/v2/leads";
 
 $headers[] = "Accept: application/json";
