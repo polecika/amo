@@ -2,19 +2,19 @@
 <html>
 <body>
 <?php
-
+require('config.php');
 // Тут сразу нужно авторизироваться
  #Сохраняем дескриптор сеанса cURL
-$user=[
-    'USER_LOGIN'=>'psvet@team.amocrm.com', #Логин (электронная почта)
-    'USER_HASH'=>'11622c37a45f475e911e5e21766f727c85ddbde0' #Хэш для доступа к API (смотрите в профиле пользователя)
+$user = [
+    'USER_LOGIN' => LOGIN, #Логин (электронная почта)
+    'USER_HASH' => HASH #Хэш для доступа к API (смотрите в профиле пользователя)
 ];
-$link='https://testPolinaSvet.amocrm.ru/private/api/auth.php?type=json';
+$link = 'https://testPolinaSvet.amocrm.ru/private/api/auth.php?type=json';
 curl($link, 'POST', $user);
-$func=$_GET["func"];// Получаем номер среагировавшей формы
+$func = $_GET["func"];// Получаем номер среагировавшей формы
 switch ($func) {
     case 1:
-        $n=$_POST["number"];              //получаем данные из формы
+        $n = $_POST["number"];              //получаем данные из формы
 
         if(create_n_el($n)) {             //запускаем функцию и проверяем
             echo 'Было добавлено '.$n.' контактов, сделок, покупателей и компаний';
@@ -32,7 +32,7 @@ switch ($func) {
         break;
 }
 function curl($link, $method, $data) { //Функция курл запроса, принимает ссылку, метод
-    $curl=curl_init();
+    $curl = curl_init();
     #Устанавливаем необходимые опции для сеанса cURL
     curl_setopt($curl,CURLOPT_RETURNTRANSFER,true);
     curl_setopt($curl,CURLOPT_USERAGENT,'amoCRM-API-client/1.0');
@@ -45,31 +45,30 @@ function curl($link, $method, $data) { //Функция курл запроса,
     curl_setopt($curl,CURLOPT_COOKIEJAR,dirname(__FILE__).'/cookie.txt'); #PHP>5.3.6 dirname(__FILE__) -> __DIR__
     curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,0);
     curl_setopt($curl,CURLOPT_SSL_VERIFYHOST,0);
-    $out=curl_exec($curl); #Инициируем запрос к API и сохраняем ответ в переменную
-    $code=curl_getinfo($curl,CURLINFO_HTTP_CODE);
+    $out = json_decode(curl_exec($curl),TRUE); #Инициируем запрос к API и сохраняем ответ в переменную
+    $code = curl_getinfo($curl,CURLINFO_HTTP_CODE);
     /* Теперь мы можем обработать ответ, полученный от сервера. Это пример. Вы можете обработать данные своим способом. */
-    $code=(int)$code;
-    $errors=[
-        301=>'Moved permanently',
-        400=>'Bad request',
-        401=>'Unauthorized',
-        403=>'Forbidden',
-        404=>'Not found',
-        500=>'Internal server error',
-        502=>'Bad gateway',
-        503=>'Service unavailable'
+    $code =(int)$code;
+    $errors = [
+        301 => 'Moved permanently',
+        400 => 'Bad request',
+        401 =>'Unauthorized',
+        403 => 'Forbidden',
+        404 => 'Not found',
+        500 => 'Internal server error',
+        502 => 'Bad gateway',
+        503 => 'Service unavailable'
     ];
     try
     {
         #Если код ответа не равен 200 или 204 - возвращаем сообщение об ошибке
-        if($code!=200 && $code!=204)
+        if($code != 200 && $code != 204)
             throw new Exception(isset($errors[$code]) ? $errors[$code] : 'Undescribed error',$code);
     }
     catch(Exception $E)
     {
         die('Ошибка: '.$E->getMessage().PHP_EOL.'Код ошибки: '.$E->getCode());
     }
-
     return $out;
     curl_close($curl); //Закрываем курл
 }
@@ -79,11 +78,11 @@ function curl($link, $method, $data) { //Функция курл запроса,
 function create_n_el($num) {//Функция создания контактов, компаний, сделок и покупателей
     //проверим, насколько много
     $circle = ceil($num / 100);
-    for($j=1; $j<=$circle; $j++) {
+    for($j = 1; $j <= $circle; $j++) {                         //Изменить на array_chunk!!!!
         echo $j.' круг отправки:';
         //Создаем  массивы с данными
         for ($i = 1 * $j; $i <= 100 * $j; $i++) {
-            if($i<=$num) {
+            if($i <= $num) {
                 $contacts['add'][] = [                           // Заполняем N контактов значениями
                     'name' => 'Contact ' . $i
                 ];
@@ -95,7 +94,7 @@ function create_n_el($num) {//Функция создания контактов
          Данные получаем в формате JSON, поэтому, для получения читаемых данных,
          нам придётся перевести ответ в формат, понятный PHP
          */
-        $result = json_decode(curl($link, 'POST', $contacts),true);
+        $result = curl($link, 'POST', $contacts);
         $ids_contacts = [];
         foreach($result['_embedded']['items'] as $item) {  //
             $ids_contacts[] = $item['id'];
@@ -108,8 +107,8 @@ function create_n_el($num) {//Функция создания контактов
                 'contacts_id' => $ids_contacts[0][$i-1],  // И привязываем к каждой компании контакт
             ];
         }
-        $link='https://testPolinaSvet.amocrm.ru/api/v2/companies';
-        $result = json_decode(curl($link, 'POST', $companies),true);
+        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/companies';
+        $result = curl($link, 'POST', $companies);
         $ids_companies = [];
         foreach($result['_embedded']['items'] as $item) {  //
             $ids_companies[] = $item['id'];
@@ -124,8 +123,8 @@ function create_n_el($num) {//Функция создания контактов
             ];
         }
         #Формируем ссылку для запроса
-        $link='https://testPolinaSvet.amocrm.ru/api/v2/leads';
-        $result = json_decode(curl($link, 'POST', $leads),true);
+        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/leads';
+        $result = curl($link, 'POST', $leads);
         $ids_leads = [];
         foreach($result['_embedded']['items'] as $item) {  //
             $ids_leads[] = $item['id'];
@@ -141,9 +140,9 @@ function create_n_el($num) {//Функция создания контактов
             ];
         }
         #Формируем ссылку для запроса
-        $link='https://testPolinaSvet.amocrm.ru/api/v2/customers';
+        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/customers';
 
-        $result = json_decode(curl($link, 'POST', $customers),true);
+        $result = curl($link, 'POST', $customers);
         $ids_customers = [];
         foreach($result['_embedded']['items'] as $item) {
             $ids_customers[] = $item['id'];
@@ -170,9 +169,9 @@ function create_n_el($num) {//Функция создания контактов
                 "10"
             ]
         ];
-        $link='https://testPolinaSvet.amocrm.ru/api/v2/fields';
+        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/fields';
 
-        $result = json_decode(curl($link, 'POST', $fields),true);
+        $result = curl($link, 'POST', $fields);
         echo "<pre>";
         $id_field = $result['_embedded']['items'][0]['id'];
         echo 'id созданного мультисписка: '.$id_field;
@@ -183,8 +182,6 @@ function create_n_el($num) {//Функция создания контактов
 
 return TRUE;
 };
-
-
 ?>
 <a href="/"><button>Вернуться на главную</button></a>
 </body>
