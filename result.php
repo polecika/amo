@@ -20,6 +20,7 @@ switch ($func) {
             echo 'Было добавлено '.$n.' контактов, сделок, покупателей и компаний';
             echo '</br>';
             echo 'Был создан мультисписок и всем контактам назначено рандомок количество значений';
+            echo '</br>';
         };
         break;
     case 2:
@@ -31,6 +32,7 @@ switch ($func) {
     case 5:
         break;
 }
+                      //надо узнать сколько раз отправляются запросы курл
 function curl($link, $method, $data) { //Функция курл запроса, принимает ссылку, метод
     $curl = curl_init();
     #Устанавливаем необходимые опции для сеанса cURL
@@ -75,82 +77,92 @@ function curl($link, $method, $data) { //Функция курл запроса,
 
 
 
-function create_n_el($num) {//Функция создания контактов, компаний, сделок и покупателей
-    //проверим, насколько много
-    $circle = ceil($num / 100);
-    for($j = 1; $j <= $circle; $j++) {                         //Изменить на array_chunk!!!!
-        echo $j.' круг отправки:';
+function create_n_el($num) {                                // Функция создания контактов, компаний, сделок и покупателей
+    $curl_count = 0;
         //Создаем  массивы с данными
-        for ($i = 1 * $j; $i <= 100 * $j; $i++) {
-            if($i <= $num) {
-                $contacts['add'][] = [                           // Заполняем N контактов значениями
-                    'name' => 'Contact ' . $i
-                ];
+        for ($i = 1; $i <= $num; $i++) {                    // Заполняем массив на N элементов значениями КОНТАКТОВ
+            $contacts['add'][] = [
+                'name' => 'Contact ' . $i
+            ];
+        }
+        $ids_contacts = [];                                 // Массив для хранения id контактов
+        foreach(array_chunk($contacts['add'], 200, TRUE) as $contact200) {//Делим массив по 200 элементов и отправляем cURL
+            // Отправляем cURL по 200 сущностей
+            $contact200_curl = [];
+            $contact200_curl['add'] = $contact200;
+            $link = 'https://testPolinaSvet.amocrm.ru/api/v2/contacts';
+            $result = curl($link, 'POST', $contact200_curl);
+            $curl_count++;
+            foreach($result['_embedded']['items'] as $item) {  // Сохраняем id контактов для последующего создания связей
+                $ids_contacts[] = $item['id'];
             }
+            unset($result);
         }
-        //100 значений добавлено в массив, можно отправлять URL
-        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/contacts';
-        /*
-         Данные получаем в формате JSON, поэтому, для получения читаемых данных,
-         нам придётся перевести ответ в формат, понятный PHP
-         */
-        $result = curl($link, 'POST', $contacts);
-        $ids_contacts = [];
-        foreach($result['_embedded']['items'] as $item) {  //
-            $ids_contacts[] = $item['id'];
-        }
-        //теперь добавим компаний
-        for($i = 1 * $j; $i <= 100 * $j; $i++) {// Заполняем N копаний значениями
-            //echo $i.'   '.$ids_contacts[$i];
+
+        for ($i = 1; $i <= $num; $i++) {                     // Заполняем массив на N элементов значениями КОМПАНИЙ
             $companies['add'][] = [
                 'name' => 'Company ' . $i,
-                'contacts_id' => $ids_contacts[0][$i-1],  // И привязываем к каждой компании контакт
+                'contacts_id' => $ids_contacts[0][$i-1],     // Привязываем к каждой компании контакт по id
             ];
         }
-        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/companies';
-        $result = curl($link, 'POST', $companies);
-        $ids_companies = [];
-        foreach($result['_embedded']['items'] as $item) {  //
-            $ids_companies[] = $item['id'];
+        $ids_companies = [];                                 // Массив для хранения id компаний
+        foreach(array_chunk($companies['add'], 200, TRUE) as $company200) {//Делим массив по 200 элементов и отправляем cURL
+            // Отправляем cURL по 200 сущностей
+            $company200_curl = [];
+            $company200_curl['add'] = $company200;
+            $link = 'https://testPolinaSvet.amocrm.ru/api/v2/companies';
+            $result = curl($link, 'POST', $company200_curl);
+            $curl_count++;
+            foreach($result['_embedded']['items'] as $item) {  // Сохраняем id компаний для последующего создания связей
+                $ids_companies[] = $item['id'];
+            }
+            unset($result);
         }
-        unset($result);
-        //создаем сделки
-        for($i = 1 * $j; $i <= 100 * $j; $i++) {       // Заполняем N сделок значениями
+
+        for ($i = 1; $i <= $num; $i++) {                      // Заполняем массив на N элементов значениями СДЕЛОК
             $leads['add'][] = [
                 'name' => 'Lead ' . $i,
-                'contacts_id' => $ids_contacts[0][$i-1],  // Привязываем к каждой сделке контакт
-                'company_id'  => $ids_companies[0][$i-1]  // Привязываем к каждой сделке компанию
+                'contacts_id' => $ids_contacts[0][$i-1],      // Привязываем к каждой сделке контакт по id
+                'company_id'  => $ids_companies[0][$i-1]      // Привязываем к каждой сделке компанию по id
             ];
         }
-        #Формируем ссылку для запроса
-        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/leads';
-        $result = curl($link, 'POST', $leads);
-        $ids_leads = [];
-        foreach($result['_embedded']['items'] as $item) {  //
-            $ids_leads[] = $item['id'];
+        $ids_leads = [];                                     // Массив для хранения id сделок
+        foreach(array_chunk($leads['add'], 200, TRUE) as $lead200) {//Делим массив по 200 элементов и отправляем cURL
+            // Отправляем cURL по 200 сущностей
+            $lead200_curl = [];
+            $lead200_curl['add'] = $lead200;
+            $link = 'https://testPolinaSvet.amocrm.ru/api/v2/leads';
+            $result = curl($link, 'POST', $lead200_curl);
+            $curl_count++;
+            foreach($result['_embedded']['items'] as $item) {  // Сохраняем id сделок для последующего создания связей
+                $ids_leads[] = $item['id'];
+            }
+            unset($result);
         }
-        unset($result);
-        //создаем покупателей
-        for($i = 1 * $j; $i <= 100 * $j; $i++) {       // Заполняем N покупателей значениями
+
+        for ($i = 1; $i <= $num; $i++) {                       // Заполняем массив на N элементов значениями ПОКУПАТЕЛЕЙ
             $customers['add'][] = [
                 'name' => 'Customer ' . $i,
-                'company_id'  => $ids_companies[0][$i-1], //Привязываем к каждому покупателю компанию
-                'next_date' => strtotime("now"),   //Обязательный параметр,
+                'company_id'  => $ids_companies[0][$i-1],      // Привязываем к каждому покупателю компанию
+                'next_date' => strtotime("now"),          // Обязательный параметр,
                 'contacts_id' => array_rand($ids_contacts, 1)
             ];
         }
-        #Формируем ссылку для запроса
-        $link = 'https://testPolinaSvet.amocrm.ru/api/v2/customers';
-
-        $result = curl($link, 'POST', $customers);
-        $ids_customers = [];
-        foreach($result['_embedded']['items'] as $item) {
-            $ids_customers[] = $item['id'];
+        $ids_customers = [];                                 // Массив для хранения id покупателей
+        foreach(array_chunk($customers['add'], 200, TRUE) as $customer200) {//Делим массив по 200 элементов и отправляем cURL
+            // Отправляем cURL по 200 сущностей
+            $customer200_curl = [];
+            $customer200_curl['add'] = $customer200;
+            $link = 'https://testPolinaSvet.amocrm.ru/api/v2/customers';
+            $result = curl($link, 'POST', $customer200_curl);
+            $curl_count++;
+            foreach($result['_embedded']['items'] as $item) {
+                $ids_customers[] = $item['id'];
+            }
+            unset($result);
         }
-        unset($result);
-    }
-        // создаем мультисписок и привязываем его ко всем контактам
-        $fields['add'][] = [
+
+        $fields['add'][] = [                                       // Cоздаем мультисписок
             'name' => "Выбор номера:",
             'field_type' =>  5,
             'element_type' => 1,
@@ -170,18 +182,45 @@ function create_n_el($num) {//Функция создания контактов
             ]
         ];
         $link = 'https://testPolinaSvet.amocrm.ru/api/v2/fields';
-
         $result = curl($link, 'POST', $fields);
-        echo "<pre>";
         $id_field = $result['_embedded']['items'][0]['id'];
-        echo 'id созданного мультисписка: '.$id_field;
-        echo "</pre>";
+        $curl_count++;
         unset($result);
-        //добавляем рандомные значения мультисписка к контактам -- пока не реализовано
 
+        //добавляем рандомные значения мультисписка к контактам
+        foreach(array_chunk($ids_contacts, 20, TRUE) as $contact200) {
+            $up_contacts = [];
+            $n = 0;
+            foreach ($contact200 as $contact) {
+                $how_much = mt_rand(1,10);                // Количество значений мультисписка, которые будут отмечены
+                $up_contacts ['update'][] = [
+                    'id' => $contact,
+                    'updated_at' => strtotime("now"),
+                    'custom_fields' => [
+                        [
+                            'id' => $id_field,
+                            'values' => [
+                                [
+                                    'enum' => mt_rand(1,10)
+                                ],
+                            ]
+                        ]
+                    ]
+                ];
+                for($i = 0; $i < $how_much; $i++) {                       //будем добавлять поля в массив
+                    array_push($up_contacts ['update'][$n]['custom_fields'][0]['values'], ['enum' => mt_rand(1,10)]);
+                }
+                $n++;
+            }
+            $link='https://testPolinaSvet.amocrm.ru/api/v2/contacts';
+            curl($link, 'POST', $up_contacts);
+            $curl_count++;
 
+        }
+    echo 'Запросы курл были вызваны '.$curl_count.'раз';
 return TRUE;
 };
+
 ?>
 <a href="/"><button>Вернуться на главную</button></a>
 </body>
