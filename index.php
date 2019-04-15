@@ -32,24 +32,23 @@
         <form method="POST" action="result.php?func=2">
             <div class="input-group">
                 <label>ID сущности:</label>
-                <input type="text" />
+                <input name="id" type="text" required />
             </div>
             <div class="input-group">
                 <label>Тип сущности:</label>
-                <select name="">
+                <select name="stype" required>
                     <option value="1">Контакт</option>
                     <option value="2">Сделка</option>
                     <option value="3">Компания</option>
-                    <option value="4">Задача</option>
                     <option value="12">Покупатель</option>
                 </select>
             </div>
             <div class="input-group">
                 <label>Значение:</label>
-                <input type="text" />
+                <input name="text" type="text" />
             </div>
             <div>
-                <input type="submit" value="Добавить"/>
+                <input type="submit" value="Добавить" required />
             </div>
         </form>
         <hr />
@@ -65,21 +64,21 @@
         <form method="POST" action="result.php?func=3">
             <div class="input-group">
                 <label>ID сущности:</label>
-                <input type="text" />
+                <input type="text" required />
             </div>
             <div class="input-group">
                 <p>
                     <label>Тип примечания:</label>
-                    <input type="radio" name="" value="4" /> Обычное примечание
-                    <input type="radio" name="" value="?" />  Входящий звонок
+                    <input type="radio" name="" value="4" required /> Обычное примечание
+                    <input type="radio" name="" value="?" required />  Входящий звонок
                 </p>
             </div>
             <div class="input-group">
                 <label>Текст примечания:</label>
-                <input type="text" />
+                <input type="text" required />
             </div>
             <div>
-                <input type="submit" value="Создать"/>
+                <input type="submit" value="Создать" required/>
             </div>
         </form>
         <hr />
@@ -95,19 +94,19 @@
         <form method="POST" action="result.php?func=4">
             <div class="input-group">
                 <label>ID сущности:</label>
-                <input type="text" />
+                <input type="text" required />
             </div>
             <div class="input-group">
                 <label>Дата дедлайна:</label>
-                <input type="date" name="" value="" />
+                <input type="date" name="" value="" required />
             </div>
             <div class="input-group">
                 <label>ID ответственного:</label>
-                <input type="text" name="" value="" />
+                <input type="text" name="" value="" required />
             </div>
             <div class="input-group">
                 <label>Текст задачи:</label>
-                <input type="text" />
+                <input type="text" required />
             </div>
             <div>
                 <input type="submit" value="Добавить"/>

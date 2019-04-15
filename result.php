@@ -193,6 +193,48 @@ switch ($func) {
 
         break;
     case 2:
+        //Получаем значения
+        $id = $_POST['id'];
+        $stype = $_POST['stype'];
+        $text = $_POST['text'];
+        $field = new cURL();
+        switch ($stype) {
+            case "1":
+                $field->link = SUBDOMAIN.'api/v2/contacts';
+                $id_f = '222511';
+                break;
+            case "2":
+                $field->link = SUBDOMAIN.'api/v2/leads';
+                $id_f = '223525';
+                break;
+            case "3":
+                $field->link = SUBDOMAIN.'api/v2/companies';
+                $id_f = '223511';
+                break;
+            case "12":
+                $field->link = SUBDOMAIN.'api/v2/customers';
+                $id_f = '223479';
+                break;
+        }
+        $field->method = 'POST';
+        $data['update'][] = [
+            'id' =>  $id,
+            'updated_at' => strtotime("now"),
+            'custom_fields'  => [
+                 [
+                    'id' => $id_f,
+                    'values' => [
+                        0 => [
+                            'value' => $text
+                        ]
+                    ]
+                ]
+            ]
+        ];
+        $stype == "12" ? (array_push($data['update'][0],  ['next_date' => strtotime("now")])) : '';
+        $field->data = $data;
+        $result = $field->curl1();
+        echo 'Поле типа текст было изменено у сущности с id = '.$id.'</br>';
         break;
     case 3:
         break;
