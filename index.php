@@ -36,7 +36,7 @@
             </div>
             <div class="input-group">
                 <label>Тип сущности:</label>
-                <select name="stype" required>
+                <select name="entity_type" required>
                     <option value="1">Контакт</option>
                     <option value="2">Сделка</option>
                     <option value="3">Компания</option>
@@ -64,21 +64,30 @@
         <form method="POST" action="result.php?func=3">
             <div class="input-group">
                 <label>ID сущности:</label>
-                <input type="text" required />
+                <input name="id" type="text" required />
+            </div>
+            <div class="input-group">
+                <label>Тип сущности:</label>
+                <select name="entity_type" required>
+                    <option value="1">Контакт</option>
+                    <option value="2">Сделка</option>
+                    <option value="3">Компания</option>
+                    <option value="12">Покупатель</option>
+                </select>
             </div>
             <div class="input-group">
                 <p>
                     <label>Тип примечания:</label>
-                    <input type="radio" name="" value="4" required /> Обычное примечание
-                    <input type="radio" name="" value="?" required />  Входящий звонок
+                    <input type="radio" name="note_type" value="4" required /> Обычное примечание
+                    <input type="radio" name="note_type" value="10" required />  Входящий звонок
                 </p>
             </div>
             <div class="input-group">
                 <label>Текст примечания:</label>
-                <input type="text" required />
+                <input type="text" name="text" required />
             </div>
             <div>
-                <input type="submit" value="Создать" required/>
+                <input type="submit" value="Создать"/>
             </div>
         </form>
         <hr />
@@ -94,19 +103,28 @@
         <form method="POST" action="result.php?func=4">
             <div class="input-group">
                 <label>ID сущности:</label>
-                <input type="text" required />
+                <input type="text" name="id" required />
+            </div>
+            <div class="input-group">
+                <label>Тип сущности:</label>
+                <select name="entity_type" required>
+                    <option value="1">Контакт</option>
+                    <option value="2">Сделка</option>
+                    <option value="3">Компания</option>
+                    <option value="12">Покупатель</option>
+                </select>
             </div>
             <div class="input-group">
                 <label>Дата дедлайна:</label>
-                <input type="date" name="" value="" required />
+                <input type="datetime-local" name="date" required />
             </div>
             <div class="input-group">
                 <label>ID ответственного:</label>
-                <input type="text" name="" value="" required />
+                <input type="text" name="id_main_user" value="" required />
             </div>
             <div class="input-group">
                 <label>Текст задачи:</label>
-                <input type="text" required />
+                <input type="text" name="text" required />
             </div>
             <div>
                 <input type="submit" value="Добавить"/>
@@ -116,63 +134,22 @@
         <!-- Конец скрипта -->
 
         <!-- Начало скрипта по завершению задачи по указанному ID -->
-        <p>Добавление примечания</p>
+        <p>Завершение задачи</p>
         <p>
             <small>
-                Укажите ID элемента сущности, в которую хотите добавить примечание.
+                Укажите ID задачи, которую хотите завершить.
             </small>
         </p>
         <form method="POST" action="result.php?func=5">
             <div class="input-group">
-                <label>ID сущности:</label>
-                <input type="number" />
-            </div>
-            <div class="input-group">
-                <p>
-                    <label>Тип примечания:</label>
-                    <input type="radio" name="" value="4" /> Обычное примечание
-                    <input type="radio" name="" value="?" />  Входящий звонок
-                </p>
-            </div>
-            <div class="input-group">
-                <label>Текст примечания:</label>
-                <input type="text" />
+                <label>ID задачи:</label>
+                <input type="text" name="id" />
             </div>
             <div>
-                <input type="submit" value="Создать"/>
+                <input type="submit" value="Удалить"/>
             </div>
         </form>
         <hr />
         <!-- Конец скрипта -->
     </body>
 </html>
-<?php
-$data =  [
-    'add' =>
-         [
-            0 =>
-                [
-                    'name' => '123',
-                    'company_id' => '7835211',
-                ],
-        ],
-];
-$link = "https://testpolinasvet.amocrm.ru/api/v2/leads";
-
-$headers[] = "Accept: application/json";
-
-//Curl options
-$curl = curl_init();
-curl_setopt($curl, CURLOPT_RETURNTRANSFER,true);
-curl_setopt($curl, CURLOPT_USERAGENT, "amoCRM-API-client-
-undefined/2.0");
-curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
-curl_setopt($curl, CURLOPT_URL, $link);
-curl_setopt($curl, CURLOPT_HEADER,false);
-curl_setopt($curl,CURLOPT_COOKIEFILE,dirname(__FILE__)."/cookie.txt");
-curl_setopt($curl,CURLOPT_COOKIEJAR,dirname(__FILE__)."/cookie.txt");
-$out = curl_exec($curl);
-curl_close($curl);
-$result = json_decode($out,TRUE);
-?>
