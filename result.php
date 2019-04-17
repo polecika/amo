@@ -2,9 +2,12 @@
 <html>
 <body>
 <?php
-require('config.php');
-require('cURL.php');
-require('AddElements.php');
+require ('config.php');
+require ('cURL.php');
+require ('Contacts.php');
+require ('Companies.php');
+require ('Leads.php');
+require ('Customers.php');
 //попробуем сделать авторизация в ООП
 $auth = new cURL;
 $auth->_link = SUBDOMAIN.'private/api/auth.php?type=json';
@@ -19,61 +22,29 @@ $func = $_GET["func"];// Получаем номер среагировавше�
 switch ($func) {
     case 1:
         $n = $_POST['number'];      //получаем данные из формы
-
+        $step = 200;
         //Добавляем контакты
-        $contacts = new AddElements();
-        $contacts->_cut_step = 200;
-        $contacts->_type = 'add';
+        $contacts = new Contacts();
         $contacts->_link = SUBDOMAIN.'api/v2/contacts';
         $contacts->_method = 'POST';
-        for ($i = 1; $i <= $n; $i++) {                    // Заполняем массив на N элементов значениями КОНТАКТОВ
-            $contacts->_elem_array[$contacts->_type][] = [
-                'name' => 'Contacts ' . $i
-            ];
-        }
-        $ids_contacts = $contacts->createElem();
-
-        $companies = new AddElements();
-        $companies->_cut_step = 200;
+        $ids_contacts = $contacts->createElem($step, $contacts->create_add($n));
+        //Добавляем компании
+        $companies = new Companies();
         $companies->_link = SUBDOMAIN.'api/v2/companies';
-        $companies->_type = 'add';
         $companies->_method = 'POST';
-        for ($i = 1; $i <= $n; $i++) {                     // Заполняем массив на N элементов значениями КОМПАНИЙ
-            $companies->_elem_array[$companies->_type][] = [
-                'name' => 'Company ' . $i,
-                'contacts_id' => $ids_contacts[$i-1],     // Привязываем к каждой компании контакт по id
-            ];
-        }
-        $ids_companies = $companies->createElem();
-
-        $leads = new AddElements();
-        $leads->_cut_step = 200;
+        $ids_companies = $companies->createElem($step, $companies->create_add($ids_contacts));
+        //Добавляем сделки
+        $leads = new Leads();
         $leads->_link = SUBDOMAIN.'api/v2/leads';
-        $leads->_type = 'add';
         $leads->_method = 'POST';
-        for ($i = 1; $i <= $n; $i++) {                      // Заполняем массив на N элементов значениями СДЕЛОК
-            $leads->_elem_array[$leads->_type][] = [
-                'name' => 'Lead ' . $i,
-                'contacts_id' => $ids_contacts[$i-1],      // Привязываем к каждой сделке контакт по id
-                'company_id'  => $ids_companies[$i-1]      // Привязываем к каждой сделке компанию по id
-            ];
-        }
-        $leads->createElem();
-        $customers = new AddElements();
-        $customers->_cut_step = 200;
-        $customers->_type = 'add';
+        $leads->createElem($step, $leads->create_add($ids_contacts, $ids_companies));
+        //Добавляем покупателей
+        $customers = new Customers();
         $customers->_link = SUBDOMAIN.'api/v2/customers';
         $customers->_method = 'POST';
-        for ($i = 1; $i <= $n; $i++) {// Заполняем массив на N элементов значениями ПОКУПАТЕЛЕЙ
-            $customers->_elem_array[$customers->_type][] = [
-                'name' => 'Customer ' . $i,
-                'company_id'  => $ids_companies[$i-1],      // Привязываем к каждому покупателю компанию
-                'next_date' => strtotime("now"),          // Обязательный параметр,
-                'contacts_id' => $ids_contacts[array_rand($ids_contacts, 1)]
-            ];
-        }
-        $customers->createElem();
-        $field['add'][] = [                                       // Cоздаем мультисписок
+        $customers->createElem($step, $customers->create_add($ids_contacts, $ids_companies));
+        //Создаем дополнительное поле мультичписок
+        $field['add'][] = [
             'name' => "Выбор номера:",
             'field_type' =>  5,
             'element_type' => 1,
@@ -99,34 +70,23 @@ switch ($func) {
         $id_field = $fields->request();
         $id_field = $id_field['_embedded']['items'][0]['id'];
 
-        $up_cont = new AddElements();
+        $up_cont = new Contacts();
         $up_cont->_link = SUBDOMAIN.'api/v2/contacts';
         $up_cont->_method = 'POST';
-        $up_cont->_cut_step = 20;
-        $up_cont->_type = 'update';
-        for ($i = 1; $i <= $n; $i++) {
-            $up_cont->_elem_array[$up_cont->_type][] = [
-                'id' => $ids_contacts[$i-1],
-                'updated_at' => strtotime("now"),
-                'custom_fields' => [
-                    [
-                        'id' => $id_field,
-                        'values' => []
-                    ]
-                ]
-            ];
+        $i = 0;
+        foreach ($ids_contacts as $id_contact) {
+            $data ['update'] [] = $up_cont->create_update($id_contact, $id_field)['update'][$i];
             $how_much = mt_rand(1,10);                // Количество значений мультисписка, которые будут отмечены
             for($j = 0; $j < $how_much; $j++) {                       //будем добавлять поля в массив
-                array_push($up_cont->_elem_array[$up_cont->_type][$i-1]['custom_fields'][0]['values'], ['enum' => mt_rand(1,10)]);
+                array_push($data['update'][$i]['custom_fields'][0]['values'], ['enum' => mt_rand(1,10)]);
             }
+            ++$i;
         }
-        $up_cont->createElem();
-
+        $up_cont->createElem(20, $data);
         echo 'Было добавлено '.$n.' контактов, сделок, покупателей и компаний';
         echo '</br>';
         echo 'Был создан мультисписок и всем контактам назначено рандомок количество значений';
         echo '</br>';
-
         break;
     case 2:
         $id = $_POST['id'];        //Получаем значения из формы
@@ -149,7 +109,7 @@ switch ($func) {
         }
         //Получаем все id полей custom_fields полученной сущности
         $taken_entity = new cURL();
-        $taken_entity->_link = $link.'?id='.$id;
+        $taken_entity->_link = $link.'?id='.$id; 
         $taken_entity->_method = 'GET';
         $result = $taken_entity->request();
         $result = $result['_embedded']['items'][0]["custom_fields"];
@@ -190,7 +150,7 @@ switch ($func) {
                  [
                     'id' => $id_field,
                     'values' => [
-                        0 => [
+                        /*0 => */[
                             'value' => $text
                         ]
                     ]
