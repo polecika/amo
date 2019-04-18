@@ -9,7 +9,7 @@ class cURL {
         $curl = curl_init();
         #Устанавливаем необходимые опции для сеанса cURL
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($curl, CURLOPT_USERAGENT, 'amoCRM-API-client/1.0');
+        curl_setopt($curl, CURLOPT_USERAGENT, 'amoCRM-API-client/2.0');
         curl_setopt($curl, CURLOPT_URL, $this->_link);
         if ($this->_method == 'POST') {
             curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->_method);
@@ -24,6 +24,7 @@ class cURL {
         $out = json_decode(curl_exec($curl), TRUE); #Инициируем запрос к API и сохраняем ответ в переменную
         $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl); //Закрываем курл
+        sleep(1);
         /* Теперь мы можем обработать ответ, полученный от сервера. Это пример. Вы можете обработать данные своим способом. */
         $code = (int)$code;
         $errors = [

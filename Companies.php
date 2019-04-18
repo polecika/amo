@@ -9,6 +9,8 @@ class Companies extends cURL
     public function create_add($ids_contacts)
     {
         $this->_type = 'add';
+        $this->_method = 'POST';
+        $this->_link = SUBDOMAIN.'api/v2/companies';
         $i = 1;
         foreach ($ids_contacts as $id_contact) {
             $this->_entity[$this->_type][] = [
@@ -19,6 +21,12 @@ class Companies extends cURL
         }
         return $this->_entity;
     }
+
+    /**
+     * @param $cut_step
+     * @param $data
+     * @return array
+     */
     public function createElem($cut_step, $data)               //метод деления массива
     {
         foreach (array_chunk($data[$this->_type], $cut_step, $this->_bool) as $cutArray) {

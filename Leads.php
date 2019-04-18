@@ -7,6 +7,8 @@ class Leads extends cURL
     private $_array_id =[];  // id нашего массива
     public function create_add($ids_contacts, $ids_companies) {
         $this->_type = 'add';
+        $this->_method = 'POST';
+        $this->_link = SUBDOMAIN.'api/v2/leads';
         $i = 1;
         foreach($ids_contacts as $id_contact) {            // Заполняем массив на N элементов значениями СДЕЛОК
             $this->_entity[$this->_type][] = [

@@ -7,6 +7,8 @@ class Customers extends cURL
     private $_array_id =[];  // id нашего массива
     public function create_add($ids_contacts, $ids_companies) {
         $this->_type = 'add';
+        $this->_method = 'POST';
+        $this->_link = SUBDOMAIN.'api/v2/customers';
         $i = 1;
         foreach($ids_companies as $id_company) {// Заполняем массив на N элементов значениями ПОКУПАТЕЛЕЙ
             $this->_entity[$this->_type][] = [
