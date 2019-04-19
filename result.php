@@ -20,7 +20,7 @@ switch ($func) {
     case 1:
         $n = $_POST['number'];      //получаем данные из формы
         //Создаем дополнительное поле мультичписок
-        $fields = new multi_field();
+        $fields = new field();
         $name = 'Новый мультисписок:';
         $enums = ["11", "21", "31", "41", "51", "61", "71", "81", "91", "101"];
         $fields->_data = $fields->create_add($name, 5, 1, $enums);
@@ -94,48 +94,32 @@ switch ($func) {
         $taken_entity->_method = 'GET';
         $result = $taken_entity->request();
         $result = $result['_embedded']['items'][0]["custom_fields"];
-        $id_fields_array = [];
-        foreach($result as $item) {          // Для каждого доп. поля проверяем если оно текстовое
-            if (count($item['values']) && is_string($item['values'][0]['value'])) {
-                // И id еще не назначено
-                $id_field = $item["id"]; // То назначаем. Потом будем по этому id менять
-                break;
+        var_dump($result);
+        if(isset($result)) {
+            foreach($result as $item) {          // Для каждого доп. поля проверяем если оно текстовое
+                if (count($item['values']) && is_string($item['values'][0]['value'])) {
+                    // И id еще не назначено
+                    $id_field = $item["id"]; // То назначаем. Потом будем по этому id менять
+                    break;
+                }
             }
         }
         $result = [];
         if(!isset($id_field)) {   //Если такое поле так и не найдено - создаем его
-            $field = new multi_field();
-            $data = $field->create_add('Тест', 1, $entity_type, '');
-            $field->_link = SUBDOMAIN.'api/v2/fields';
-            $field->_data = $data;
+            $field = new field();
+            $field->_link = $link;
+            echo $field->_link;
+            $field->_data = $field->create_add('Тест', 1, $entity_type);
             $result = $field->request();
-            $data = [];
             $id_field = $result['_embedded']['items'][0]['id'];
-            $result = [];
         }
         //Теперь по id поля меняем значение доп.поля
-        $update_entity = new cURL();
+        $update_entity = new field();
         $update_entity->_method = 'POST';
         $update_entity->_link = $link;
-        $data['update'][] = [
-            'id' =>  $id,
-            'updated_at' => strtotime("now"),
-            'custom_fields'  => [
-                 [
-                    'id' => $id_field,
-                    'values' => [
-                        [
-                            'value' => $text
-                        ]
-                    ]
-                ]
-            ]
-        ];
-        if ($entity_type == "12") {
-            (array_push($data['update'][0], ['next_date' => strtotime("now")]));
-        }
+        $data = $update_entity->create_update($id, $id_field, $text);
         $update_entity->_data = $data;
-        $result = $update_entity->request();
+        $update_entity->request();
         echo 'Поле типа текст было изменено у сущности с id = '.$id.'</br>';
         break;
     case 3:
@@ -145,9 +129,9 @@ switch ($func) {
         $note_type = $_POST['note_type'];
         $text = $_POST['text'];
         $add_note = new Note();
-        $data = $add_note->create_add($id, $entity_type, $note_type, $text);
+        $add_note->_data = $add_note->create_add($id, $entity_type, $note_type, $text);
         if($add_note->request()) {
-            echo 'Примечание добавлено успешно</br>';
+            echo 'Примечание добавлено успешно'.'</br>';
         }
         break;
     case 4:
@@ -159,6 +143,7 @@ switch ($func) {
         $text = $_POST['text'];
         $add_task = new Task();
         $data = $add_task->create_add($id, $entity_type, $deadline_date, $text, $id_main_user);
+        $add_task->_data = $data;
         if($add_task->request()) {
             echo 'Задание добавлено';
         }
@@ -167,7 +152,7 @@ switch ($func) {
         //Получаем значения из формы
         $id = $_POST['id'];
         $close_task = new Task();
-        $data = $close_task->create_update($id);
+        $close_task->_data = $close_task->create_update($id);
         $result = $close_task->request();
         if($result) {
             echo 'Задача завершена';

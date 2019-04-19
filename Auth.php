@@ -1,13 +1,14 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: psvet
- * Date: 18.04.2019
- * Time: 12:54
+ * User: Polina Svet
+ * Класс для создания запроса на авторизацию и отправка его
  */
 
 class Auth extends cURL
 {
+    /**
+     * @return mixed - возвращает флаг авторизации true/false
+     */
     public function Autorisation() {
         $this->_link = SUBDOMAIN.'private/api/auth.php?type=json';
         $this->_method = 'POST';

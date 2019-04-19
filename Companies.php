@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * Class Companies отвечает за обработку сощностей Компаний
+ */
 class Companies extends cURL
 {
     private $_entity = [];   // массив с сущностями
@@ -6,6 +10,10 @@ class Companies extends cURL
     private $_bool = TRUE;
     private $_array_id =[];  // id нашего массива
 
+    /**
+     * @param $ids_contacts - массив с id контактов для создания связей
+     * @return array - массив с id компаний
+     */
     public function create_add($ids_contacts)
     {
         $this->_type = 'add';
@@ -23,9 +31,9 @@ class Companies extends cURL
     }
 
     /**
-     * @param $cut_step
-     * @param $data
-     * @return array
+     * @param $cut_step - количество сущностей, отправляемых одним запросом
+     * @param $data - все сформированные запросы
+     * @return array - массив с id отправленных компаний
      */
     public function createElem($cut_step, $data)               //метод деления массива
     {

@@ -1,10 +1,20 @@
 <?php
+
+/**
+ * Class Customers отвечает за сущность ПОкупателей
+ */
 class Customers extends cURL
 {
     private $_entity = [];   // массив с сущностями
     private $_type;          // add или update
     private $_bool = TRUE;
     private $_array_id =[];  // id нашего массива
+
+    /**
+     * @param $ids_contacts -  массив с id контактов для создания связей
+     * @param $ids_companies - массив с id компаний для создания связей
+     * @return array - массив запроса на добавление покупателя
+     */
     public function create_add($ids_contacts, $ids_companies) {
         $this->_type = 'add';
         $this->_method = 'POST';
@@ -17,9 +27,16 @@ class Customers extends cURL
                 'next_date' => strtotime("now"),          // Обязательный параметр,
                 'contacts_id' => $ids_contacts[array_rand($ids_contacts, 1)]
             ];
+            $i++;
         }
         return $this->_entity;
     }
+
+    /**
+     * @param $cut_step - количество сущностей, отправляемых одним запросом
+     * @param $data - все сформированные запросы
+     * @return array - массив с id отправленных покупателей
+     */
     public function createElem($cut_step, $data)                  //метод деления массива
     {
         foreach (array_chunk($data[$this->_type], $cut_step, $this->_bool) as $cutArray) {

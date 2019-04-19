@@ -1,15 +1,20 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: psvet
- * Date: 18.04.2019
- * Time: 20:11
+ * Class Task отвечает за сущность Задачи
  */
 
 class Task extends cURL
 {
     private $_entity = [];   // массив с сущностями
     private $_type;          // add или update
+    /**
+     * @param $id - id сущности, к которой добавляем задачу
+     * @param $entity_type - тип сущности, к которой добавляем задачу
+     * @param $deadline_date - до какого срока должна быть выполнена задача
+     * @param $text - текст задачи
+     * @param $id_main_user - id пользователя
+     * @return array - массив запроса
+     */
     public function create_add($id, $entity_type, $deadline_date, $text, $id_main_user) {
         $this->_method = 'POST';
         $this->_link = SUBDOMAIN.'api/v2/tasks';
@@ -25,6 +30,11 @@ class Task extends cURL
         ];
         return $this->_entity;
     }
+
+    /**
+     * @param $id - id изменяемой задачи
+     * @return array - массив запроса
+     */
     public function create_update($id) {
         $this->_method = 'POST';
         $this->_link = SUBDOMAIN.'api/v2/tasks';
