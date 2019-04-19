@@ -47,22 +47,19 @@ switch ($func) {
             }
             $i++;
         }
-        $ids_contacts = $contacts->createElem($step, $data_contacts);
+        $ids_contacts = $contacts->cut_Elements($step, $data_contacts, 'add');
 
         //Добавляем компании
-        $auth->Autorisation();
         $companies = new Companies();
-        $ids_companies = $companies->createElem($step, $companies->create_add($ids_contacts));
+        $ids_companies = $companies->cut_Elements($step, $companies->create_add($ids_contacts), 'add');
 
         //Добавляем сделки
-        $auth->Autorisation();
         $leads = new Leads();
-        $leads->createElem($step, $leads->create_add($ids_contacts, $ids_companies));
+        $leads->cut_Elements($step, $leads->create_add($ids_contacts, $ids_companies), 'add');
 
         //Добавляем покупателей
-        $auth->Autorisation();
         $customers = new Customers();
-        $customers->createElem($step, $customers->create_add($ids_contacts, $ids_companies));
+        $customers->cut_Elements($step, $customers->create_add($ids_contacts, $ids_companies), 'add');
 
         echo 'Было добавлено '.$n.' контактов, сделок, покупателей и компаний';
         echo '</br>';

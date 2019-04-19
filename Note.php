@@ -5,8 +5,6 @@
 
 class Note extends cURL
 {
-    private $_entity = [];   // массив с сущностями
-    private $_type;          // add или update
     /**
      * @param $id - id сущности, к которой будет добавляться примечание
      * @param $entity_type - тип сущнссти(int)
@@ -20,12 +18,13 @@ class Note extends cURL
     public function create_add($id, $entity_type, $note_type, $text,
                                $example_phone = '79854723575',
                                $example_link = 'http://example.com',
-                               $example_src = 'http://example.com')
+                               $example_src = 'http://example.com'
+    )
     {
-        $this->_type = 'add';
         $this->_method = 'POST';
         $this->_link = SUBDOMAIN.'api/v2/notes';
-        $this->_entity[$this->_type][] = [
+        $entity = [];
+        $entity['add'][] = [
             'element_id' => $id,
             'element_type' => $entity_type,
             'text' => $text,
@@ -33,7 +32,7 @@ class Note extends cURL
             'created_at' => strtotime("now"),
         ];
         if($note_type == 10) {
-            $this->_entity[$this->_type][0] ['params'] = [
+            $entity['add'][0] ['params'] = [
                 'UNIQ' => 'BCEFA2341',
                 'DURATION' => '33',
                 'SRC' => $example_src,
@@ -41,6 +40,6 @@ class Note extends cURL
                 'PHONE' => $example_phone
             ];
         }
-        return $this->_entity;
+        return $entity;
     }
 }

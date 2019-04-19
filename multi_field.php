@@ -5,9 +5,6 @@
 
 class field extends cURL
 {
-    private $_entity = [];   // массив с сущностями
-    private $_type;          // add или update
-
     /**
      * @param $name - наименование дополнительного поля
      * @param $field_type - тип кастомного поля(int)
@@ -17,10 +14,9 @@ class field extends cURL
      */
     public function create_add($name, $field_type, $entity_type, $enums = NULL)
     {
-        $this->_type = 'add';
         $this->_method = 'POST';
         $this->_link = SUBDOMAIN.'api/v2/fields';
-        $this->_entity[$this->_type][] = [
+        $entity['add'][] = [
             'name' => $name,
             'field_type' =>  $field_type,
             'element_type' => $entity_type,
@@ -29,9 +25,9 @@ class field extends cURL
             'enums' => $enums,
         ];
         if ($entity_type == "12") {
-            $this->_entity[$this->_type][0]['next_date'] = strtotime("+1 week") ;
+            $entity['add'][0]['next_date'] = strtotime("+1 week") ;
         }
-        return $this->_entity;
+        return $entity;
     }
 
     /**
@@ -42,8 +38,8 @@ class field extends cURL
      */
     public function create_update($id, $id_field, $text) {
         $this->_method = 'POST';
-        $this->_type = 'update';
-        $this->_entity[$this->_type][] = [
+        $entity = [];
+        $entity['update'][] = [
             'id' =>  $id,
             'updated_at' => strtotime("now"),
             'custom_fields'  => [
@@ -57,6 +53,6 @@ class field extends cURL
                 ]
             ]
         ];
-        return $this->_entity;
+        return $entity;
     }
 }

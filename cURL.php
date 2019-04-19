@@ -3,6 +3,7 @@ class cURL {
     public $_link;
     public $_method;
     public $_data;
+    const _preserve_keys = TRUE;  // ключи оригинального массива будут сохранены
 
     public function request()
     { //Функция курл запроса, принимает ссылку, метод
@@ -49,5 +50,19 @@ class cURL {
             die('Ошибка: ' . $E->getMessage() . PHP_EOL . 'Код ошибки: ' . $E->getCode());
         }
         return $out;
+    }
+    public function cut_Elements($cut_step, $data, $type)               //метод деления массива
+    {
+        $array_id = [];
+        foreach (array_chunk($data[$type], $cut_step, self::_preserve_keys) as $cutArray) {
+            // Отправляем cURL по определенному количеству сущностей
+            $data_curl[$type] = $cutArray;
+            $this->_data = $data_curl;
+            $result = $this->request();
+            foreach ($result['_embedded']['items'] as $item) {    // Сохраняем id контактов для последующего создания связей
+                $array_id[] = $item['id'];
+            }
+        }
+        return $array_id;
     }
 }
