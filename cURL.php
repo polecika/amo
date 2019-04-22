@@ -1,20 +1,17 @@
 <?php
 class cURL {
-    public $_link;
-    public $_method;
-    public $_data;
-    const _preserve_keys = TRUE;  // ключи оригинального массива будут сохранены
 
-    public function request()
+    static public function request($api, $data = [])
     { //Функция курл запроса, принимает ссылку, метод
+        $link =  SUBDOMAIN . $api;
         $curl = curl_init();
         #Устанавливаем необходимые опции для сеанса cURL
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($curl, CURLOPT_USERAGENT, 'amoCRM-API-client/2.0');
-        curl_setopt($curl, CURLOPT_URL, $this->_link);
-        if ($this->_method == 'POST') {
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->_method);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($this->_data));
+        curl_setopt($curl, CURLOPT_URL, $link);
+        if ($data) {
+            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
             curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         }
         curl_setopt($curl, CURLOPT_HEADER, FALSE);
@@ -50,19 +47,5 @@ class cURL {
             die('Ошибка: ' . $E->getMessage() . PHP_EOL . 'Код ошибки: ' . $E->getCode());
         }
         return $out;
-    }
-    public function cut_Elements($cut_step, $data, $type)               //метод деления массива
-    {
-        $array_id = [];
-        foreach (array_chunk($data[$type], $cut_step, self::_preserve_keys) as $cutArray) {
-            // Отправляем cURL по определенному количеству сущностей
-            $data_curl[$type] = $cutArray;
-            $this->_data = $data_curl;
-            $result = $this->request();
-            foreach ($result['_embedded']['items'] as $item) {    // Сохраняем id контактов для последующего создания связей
-                $array_id[] = $item['id'];
-            }
-        }
-        return $array_id;
     }
 }

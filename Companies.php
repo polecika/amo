@@ -3,25 +3,22 @@
 /**
  * Class Companies отвечает за обработку сощностей Компаний
  */
-class Companies extends cURL
+class Companies extends Entities
 {
-    /**
-     * @param $ids_contacts - массив с id контактов для создания связей
-     * @return array - массив с id компаний
-     */
-    public function create_add($ids_contacts)
-    {
-        $this->_method = 'POST';
-        $this->_link = SUBDOMAIN.'api/v2/companies';
-        $entity = [];
-        $i = 0;
-        foreach ($ids_contacts as $id_contact) {
-            $entity['add'][] = [
-                'name' => 'Company ' . $i,
-                'contacts_id' => $id_contact,
-            ];
-            $i++;
-        }
-        return $entity;
+    public function get_data() {
+        return [
+            'id' => $this->get_id(),
+            'updated_at' => $this->get_update_datetime(),
+            'name' => $this->get_name(),
+            'contacts_id' => [
+                $this->get_contact_id()
+            ],
+            'custom_fields' => [
+                [
+                    'id' => $this->get_field_id(),
+                    'values' => $this->get_field_value()
+                ]
+            ]
+        ];
     }
 }

@@ -3,13 +3,25 @@
 /**
  * Class Customers отвечает за сущность ПОкупателей
  */
-class Customers extends cURL
+class Customers extends Entities
 {
-    /**
-     * @param $ids_contacts -  массив с id контактов для создания связей
-     * @param $ids_companies - массив с id компаний для создания связей
-     * @return array - массив запроса на добавление покупателя
-     */
+    public function get_data() {
+        return [
+            'id' => $this->get_id(),
+            'updated_at' => $this->get_update_datetime(),
+            'name' => $this->get_name(),
+            'contacts_id' => [
+                $this->get_contact_id()
+            ],
+            'next_date' => $this->get_next_date(),
+            'custom_fields' => [
+                [
+                    'id' => $this->get_field_id(),
+                    'values' => $this->get_field_value()
+                ]
+            ]
+        ];
+    }
     public function create_add($ids_contacts, $ids_companies) {
         $this->_method = 'POST';
         $this->_link = SUBDOMAIN.'api/v2/customers';

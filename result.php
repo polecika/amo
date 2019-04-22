@@ -3,15 +3,11 @@
 <body>
 <?php
 require ('config.php');
-require ('cURL.php');
-require ('Contacts.php');
-require ('Companies.php');
-require ('Leads.php');
-require ('Customers.php');
-require ('multi_field.php');
-require ('Auth.php');
-require ('Note.php');
-require ('Task.php');
+function __autoload( $className ) {
+  $className = str_replace( "..", "", $className );
+  require_once( "$className.php" );
+}
+
 //попробуем сделать авторизация в ООП
 $auth = new Auth();
 $auth->Autorisation();
@@ -21,46 +17,63 @@ switch ($func) {
         $n = $_POST['number'];      //получаем данные из формы
         //Создаем дополнительное поле мультичписок
         $fields = new field();
-        $name = 'Новый мультисписок:';
-        $enums = ["11", "21", "31", "41", "51", "61", "71", "81", "91", "101"];
-        $fields->_data = $fields->create_add($name, 5, 1, $enums);
-        $id_field = $fields->request();
-        $id_field = $id_field['_embedded']['items'][0]['id'];     //id озданного мультисписка
+        $fields->set_name('Новый мультисписок:');
+        $fields->set_entity_type(1);
+        $fields->set_field_type(5);
+        $fields->set_enums(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+        $field [] = $fields;
+        $id_field = Entities::create($field, 'api/v2/fields', 'add');
+        $id_field = $id_field[0];     //id озданного мультисписка
 
         //Получаем id каждого элемента мультисписка
         $sun = new cURL();
-        $sun->_link = SUBDOMAIN.'api/v2/account?with=custom_fields';
-        $sun->_method = 'GET';
-        $enum_array = $sun->request();
+        $enum_array = cURL::request('api/v2/account?with=custom_fields');
         $enum_array = array_keys($enum_array['_embedded']['custom_fields']['contacts'][$id_field]['enums']);
 
-        $step = 200;     //количество сущностей, передаваемых в одном курл запросе
         //Добавляем контакты
-        $contacts = new Contacts();
-        $data_contacts = $contacts->create_add($n);
-        $i = 0;
-        foreach ($data_contacts ['add'] as $contact) {
+        $contacts = [];
+        for($i = 0; $i < $n; $i++) {
+            $contact = new Contacts();
+            $contact->set_name('Contact '.($i+1));
+            $contact->set_field_id($id_field);
+            $field = [];
             $how_much = mt_rand(1,10);// Количество значений мультисписка, которые будут отмечены
-            $data_contacts['add'][$i]['custom_fields'][0] = [ 'id' => $id_field ];
-            for($j = 0; $j < $how_much; $j++) {                        //будем добавлять поля в массив
-                $data_contacts['add'][$i]['custom_fields'][0]['values'] [] =  ['enum' => $enum_array[mt_rand(0,9)]] ;
+           for($j = 0; $j < $how_much; $j++) {                        //будем добавлять поля в массив
+                $field[] =  ['enum' => $enum_array[mt_rand(0,9)]] ;
             }
-            $i++;
+            $contact->set_field_value($field);
+            $contacts[] = $contact ;
         }
-        $ids_contacts = $contacts->cut_Elements($step, $data_contacts, 'add');
-
+        $ids_contacts = Entities::create($contacts, 'api/v2/contacts', 'add');
         //Добавляем компании
-        $companies = new Companies();
-        $ids_companies = $companies->cut_Elements($step, $companies->create_add($ids_contacts), 'add');
-
+        $companies = [];
+        for($i = 0; $i < $n; $i++) {
+            $company = new Companies();
+            $company->set_name('Company '.($i+1));
+            $company->set_contact_id($ids_contacts[$i]);
+            $companies[] = $company;
+        }
+        $ids_companies = Entities::create($companies, 'api/v2/companies', 'add');
         //Добавляем сделки
-        $leads = new Leads();
-        $leads->cut_Elements($step, $leads->create_add($ids_contacts, $ids_companies), 'add');
-
+        $leads = [];
+        for($i = 0; $i < $n; $i++) {
+            $lead = new Leads();
+            $lead->set_name('Lead '.($i+1));
+            $lead->set_contact_id($ids_contacts[$i]);
+            $lead->set_company_id($ids_companies[$i]);
+            $leads[] = $lead;
+        }
+        Entities::create($leads, 'api/v2/leads', 'add');
         //Добавляем покупателей
-        $customers = new Customers();
-        $customers->cut_Elements($step, $customers->create_add($ids_contacts, $ids_companies), 'add');
-
+        $customers = [];
+        for($i = 0; $i < $n; $i++) {
+            $customer = new Customers();
+            $customer->set_name('Customer '.($i));
+            $customer->set_company_id($ids_companies[$i]);
+            $customer->set_contact_id($ids_contacts[$i]);
+            $customers[] = $customer;
+        }
+        Entities::create($customers, 'api/v2/customers', 'add');
         echo 'Было добавлено '.$n.' контактов, сделок, покупателей и компаний';
         echo '</br>';
         echo 'Был создан мультисписок и всем контактам назначено рандомок количество значений';
@@ -73,25 +86,25 @@ switch ($func) {
         //Определяем, с какой сущностью имеем дело и сразу формируем ссылку
         switch ($entity_type) {
             case "1":
-                $link = SUBDOMAIN.'api/v2/contacts/';
+                $link = 'api/v2/contacts/';
+                $update_entity = new Contacts();
                 break;
             case "2":
-                $link = SUBDOMAIN.'api/v2/leads/';
+                $link = 'api/v2/leads/';
+                $update_entity = new Leads();
                 break;
             case "3":
-                $link = SUBDOMAIN.'api/v2/companies/';
+                $link = 'api/v2/companies/';
+                $update_entity = new Companies();
                 break;
             case "12":
-                $link = SUBDOMAIN.'api/v2/customers/';
+                $link = 'api/v2/customers/';
+                $update_entity = new Customers();
                 break;
         }
         //Получаем все id полей custom_fields полученной сущности
-        $taken_entity = new cURL();
-        $taken_entity->_link = $link.'?id='.$id;
-        $taken_entity->_method = 'GET';
-        $result = $taken_entity->request();
+        $result = cURL::request($link.'?id='.$id);
         $result = $result['_embedded']['items'][0]["custom_fields"];
-        var_dump($result);
         if(isset($result)) {
             foreach($result as $item) {          // Для каждого доп. поля проверяем если оно текстовое
                 if (count($item['values']) && is_string($item['values'][0]['value'])) {
@@ -104,19 +117,25 @@ switch ($func) {
         $result = [];
         if(!isset($id_field)) {   //Если такое поле так и не найдено - создаем его
             $field = new field();
-            $field->_link = $link;
-            echo $field->_link;
-            $field->_data = $field->create_add('Тест', 1, $entity_type);
-            $result = $field->request();
-            $id_field = $result['_embedded']['items'][0]['id'];
+            $field->set_name('Тест');
+            $field->set_field_type(1);
+            $field->set_entity_type($entity_type);
+            $fields[] = $field;
+            $id_field = Entities::create($fields, $link, 'add');
         }
         //Теперь по id поля меняем значение доп.поля
-        $update_entity = new field();
-        $update_entity->_method = 'POST';
-        $update_entity->_link = $link;
-        $data = $update_entity->create_update($id, $id_field, $text);
-        $update_entity->_data = $data;
-        $update_entity->request();
+        $update_entities->set_id($id);
+        $update_entities->set_update_datetime(strtotime("now"));
+        $update_entities->get_field_id($id_field);
+        $update_entities->get_field_value(
+            [
+                [
+                        'value' => $text
+                ]
+            ]
+        );
+        $update_value[] = $update_entities;
+        Entities::create($update_value, $link, 'update');
         echo 'Поле типа текст было изменено у сущности с id = '.$id.'</br>';
         break;
     case 3:
@@ -140,7 +159,7 @@ switch ($func) {
         $text = $_POST['text'];
         $add_task = new Task();
         $data = $add_task->create_add($id, $entity_type, $deadline_date, $text, $id_main_user);
-        $add_task->_data = $data;
+        cURL::request('api/v2/tasks');
         if($add_task->request()) {
             echo 'Задание добавлено';
         }
