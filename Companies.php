@@ -8,8 +8,8 @@ class Companies extends Entities
     public function get_data() {
         return [
             'id' => $this->get_id(),
-            'updated_at' => $this->get_update_datetime(),
             'name' => $this->get_name(),
+            'updated_at' => $this->get_update_datetime(),
             'contacts_id' => [
                 $this->get_contact_id()
             ],

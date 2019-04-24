@@ -38,11 +38,11 @@ switch ($func) {
             $contact->set_field_id($id_field);
             $field = [];
             $how_much = mt_rand(1,10);// Количество значений мультисписка, которые будут отмечены
-           for($j = 0; $j < $how_much; $j++) {                        //будем добавлять поля в массив
+            for($j = 0; $j < $how_much; $j++) {                        //будем добавлять поля в массив
                 $field[] =  ['enum' => $enum_array[mt_rand(0,9)]] ;
             }
             $contact->set_field_value($field);
-            $contacts[] = $contact ;
+            $contacts[] = $contact;
         }
         $ids_contacts = Entities::create($contacts, 'api/v2/contacts', 'add');
         //Добавляем компании
@@ -124,17 +124,17 @@ switch ($func) {
             $id_field = Entities::create($fields, $link, 'add');
         }
         //Теперь по id поля меняем значение доп.поля
-        $update_entities->set_id($id);
-        $update_entities->set_update_datetime(strtotime("now"));
-        $update_entities->get_field_id($id_field);
-        $update_entities->get_field_value(
+        $update_entity->set_id($id);
+        $update_entity->set_update_datetime(strtotime("now"));
+        $update_entity->set_field_id($id_field);
+        $update_entity->set_field_value(
             [
                 [
                         'value' => $text
                 ]
             ]
         );
-        $update_value[] = $update_entities;
+        $update_value[] = $update_entity;
         Entities::create($update_value, $link, 'update');
         echo 'Поле типа текст было изменено у сущности с id = '.$id.'</br>';
         break;
@@ -144,11 +144,19 @@ switch ($func) {
         $entity_type = $_POST['entity_type'];
         $note_type = $_POST['note_type'];
         $text = $_POST['text'];
-        $add_note = new Note();
-        $add_note->_data = $add_note->create_add($id, $entity_type, $note_type, $text);
-        if($add_note->request()) {
-            echo 'Примечание добавлено успешно'.'</br>';
+        $note = new Note();
+        $note->set_id($id);
+        $note->set_entity_type($entity_type);
+        $note->set_note_type($note_type);
+        $note->set_text($text);
+        if($note_type == 10) {
+            $note->set_param_src('http://example.com');
+            $note->set_param_link('http://example.com');
+            $note->set_param_phone('79854723575');
         }
+        $add_note[] = $note;
+        Entities::create($add_note, 'api/v2/notes', 'add');
+        echo 'Примечание добавлено успешно'.'</br>';
         break;
     case 4:
         //Получаем значения из формы
@@ -157,22 +165,27 @@ switch ($func) {
         $deadline_date = strtotime($_POST['date']);
         $id_main_user = $_POST['id_main_user'];
         $text = $_POST['text'];
-        $add_task = new Task();
-        $data = $add_task->create_add($id, $entity_type, $deadline_date, $text, $id_main_user);
-        cURL::request('api/v2/tasks');
-        if($add_task->request()) {
-            echo 'Задание добавлено';
-        }
+        $task = new Task();
+        $task->set_element_id($id);
+        $task->set_entity_type($entity_type);
+        $task->set_id_main_user($id_main_user);
+        $task->set_deadline_date($deadline_date);
+        $task->set_task_type(mt_rand(1,3));
+        $task->set_text($text);
+        $add_task[] = $task;
+        Entities::create($add_task, 'api/v2/tasks', 'add');
+        echo 'Задание добавлено</br>';
         break;
     case 5:
         //Получаем значения из формы
         $id = $_POST['id'];
-        $close_task = new Task();
-        $close_task->_data = $close_task->create_update($id);
-        $result = $close_task->request();
-        if($result) {
-            echo 'Задача завершена';
-        }
+        $task = new Task();
+        $task->set_id($id);
+        $task->set_is_completed('TRUE');
+        $task->set_update_datetime(strtotime("now"));
+        $close_task[] = $task;
+        Entities::create($close_task, 'api/v2/tasks', 'update');
+        echo 'Задача завершена';
         break;
 }
 ?>
